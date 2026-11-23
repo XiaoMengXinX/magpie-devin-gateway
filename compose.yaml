@@ -1,0 +1,11 @@
+services:
+  gateway:
+    build: .
+    image: magpie-devin-gateway:local
+    # raw: a Devin session token contains `$`, which interpolation would cut off
+    env_file:
+      - path: .env
+        format: raw
+    ports:
+      - "127.0.0.1:8790:8790"
+    restart: unless-stopped

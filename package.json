@@ -1,0 +1,13 @@
+{
+  "name": "magpie-devin-gateway",
+  "private": true,
+  "type": "module",
+  "description": "OpenAI and Anthropic APIs for one Devin account, built on the magpie-community devin plugin",
+  "license": "MIT",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "start": "node src/main.mjs",
+    "test": "bun test ./upstream/packages/devin ./test",
+    "sign-in": "node sign-in.mjs"
+  }
+}
