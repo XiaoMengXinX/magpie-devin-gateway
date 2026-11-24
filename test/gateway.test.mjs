@@ -221,11 +221,13 @@ test("an assistant prefill is a 400 on every API, and Devin isn't asked", async 
   expect(sent).toHaveLength(0)
 })
 
-test("a body past 10 MiB is a 413, and Devin isn't asked", async () => {
-  const res = await post("/v1/messages", { model: "claude-opus-5-5", max_tokens: 64, messages: [{ role: "user", content: "x".repeat(10 << 20) }] })
-  expect(res.status).toBe(413)
-  expect((await res.json()).error.type).toBe("request_too_large")
-  expect(sent).toHaveLength(0)
+test("a body past 10 MiB reaches Devin gzipped", async () => {
+  const content = "x".repeat(10 << 20)
+  const res = await post("/v1/messages", { model: "claude-opus-5-5", max_tokens: 64, messages: [{ role: "user", content }] })
+  expect(res.status).toBe(200)
+  expect(sent).toHaveLength(1)
+  expect(sent[0].gz).toBe(true)
+  expect(prompts(sent[0].data)[0].text.length).toBe(content.length)
 })
 
 test("Devin's content policy refusal comes back as a 400 with its words", async () => {

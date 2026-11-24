@@ -7,10 +7,6 @@ import { pipeline } from "node:stream/promises"
 import { pluginVersion } from "./devin.mjs"
 import { fromMessages, RequestError, toMessages } from "./responses.mjs"
 
-// Devin's nginx turns away a body past 10 MiB with 413; a client's body past
-// it is answered the same here, before it is read whole.
-const MAX_BODY = 10 << 20
-
 const openaiError = (status, message) => Response.json({ error: { message, type: "invalid_request_error", code: status } }, { status })
 const anthropicError = (status, message) =>
   Response.json({ type: "error", error: { type: { 401: "authentication_error", 404: "not_found_error", 413: "request_too_large" }[status] ?? "invalid_request_error", message } }, { status })
@@ -58,14 +54,8 @@ export function createGateway({ apiKey, devin }) {
       return Response.json({ object: "list", data: (await devin.models()).map((m) => ({ id: m.id, object: "model", created: 0, owned_by: "devin", display_name: m.name })) })
     if (req.method !== "POST" || !route) return error(404, `no route for ${req.method} ${path}`)
     if (!devin.signedIn) return error(401, "DEVIN_API_KEY is not set")
-    if (Number(req.headers["content-length"]) > MAX_BODY) return error(413, "request body is larger than 10 MiB")
     const chunks = []
-    let size = 0
-    for await (const c of req) {
-      size += c.length
-      if (size > MAX_BODY) return error(413, "request body is larger than 10 MiB")
-      chunks.push(c)
-    }
+    for await (const chunk of req) chunks.push(chunk)
     let body
     try {
       body = JSON.parse(Buffer.concat(chunks).toString("utf8"))

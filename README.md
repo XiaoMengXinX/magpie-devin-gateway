@@ -24,7 +24,7 @@ Devin协议的全部实现来自[magpie-community/plugins](https://github.com/ma
 - Messages的每个content block单独作为一条prompt发送，带`cache_control`的block对应Devin的`prompt_cache_options{EPHEMERAL}`。
 - Claude的thinking签名只按Devin返回的原样回放，网关不生成也不修改签名。Messages直接使用thinking block的`signature`；Responses把签名和thinking原文一起封装在reasoning item的`encrypted_content`中，客户端只回传这个字段也能还原。
 - Responses没有`cache_control`字段，网关自动为instructions和最新一条输入打缓存标记。
-- 超过8 KiB的请求体以gzip发给Devin；网关收到超过10 MiB的请求体时返回413。
+- 发给Devin的protobuf消息超过8 KiB时，插件会用gzip压缩。
 - 对话必须以user消息或tool result结尾，以assistant结尾的prefill请求返回400。
 - Devin的内容策略错误原样以400返回，网关不做关键词过滤或任何绕过。
 
@@ -105,7 +105,7 @@ docker compose up -d --build --wait
 ```
 src/
   main.mjs        读取环境变量并启动服务
-  server.mjs      HTTP服务：鉴权、请求体大小限制、prefill检查、错误格式、流式转发
+  server.mjs      HTTP服务：鉴权、JSON解析、prefill检查、错误格式、流式转发
   devin.mjs       以单账号加载插件，提供chat、messages和models
   responses.mjs   Responses与Messages之间的请求和事件流翻译
 test/
